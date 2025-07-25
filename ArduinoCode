@@ -1,0 +1,167 @@
+#include "BluetoothSerial.h"
+BluetoothSerial SerialBT;
+
+// Motor pins
+const int IN1 = 26, IN2 = 33, IN3 = 25, IN4 = 27;
+
+// Azimuth control
+int azimuthRef = -1;
+int azimuthThreshold = 30;  // Degrees
+bool isTurning = false;
+unsigned long turnStartTime = 0, turnDuration = 0;
+String turnDirection = "";
+#define TURN_CONSTANT 10.0  // ms per degree
+
+// Step movement control
+int lastStepCount = -1;
+bool isMovingTimed = false;
+unsigned long moveStartTime = 0, moveDuration = 0;
+#define STEP_CONSTANT 2000  // ms per step (adjust as needed)
+
+bool isMovingForward = false;
+
+void setup() {
+  Serial.begin(115200);
+  SerialBT.begin("ESP32_BT_Device");
+
+  pinMode(IN1, OUTPUT); pinMode(IN2, OUTPUT);
+  pinMode(IN3, OUTPUT); pinMode(IN4, OUTPUT);
+
+  stopMotors();
+
+  Serial.println("Bluetooth started. Awaiting azimuth and steps...");
+}
+
+void stopMotors() {
+  digitalWrite(IN1, LOW); digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW); digitalWrite(IN4, LOW);
+  isMovingForward = false;
+}
+
+void moveForward() {
+  digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
+  digitalWrite(IN3, LOW);  digitalWrite(IN4, HIGH);
+  isMovingForward = true;
+  Serial.println("Moving forward...");
+}
+
+void startTurn(String direction, int diff) {
+  stopMotors();  // Ensure motors are stopped before turning
+
+  turnDuration = (unsigned long)(abs(diff) * TURN_CONSTANT);
+  turnStartTime = millis();
+  isTurning = true;
+  turnDirection = direction;
+
+  if (direction == "left") {
+    digitalWrite(IN1, HIGH); digitalWrite(IN2, LOW);
+    digitalWrite(IN3, LOW);  digitalWrite(IN4, LOW);
+  } else {
+    digitalWrite(IN1, LOW); digitalWrite(IN2, LOW);
+    digitalWrite(IN3, LOW);  digitalWrite(IN4, HIGH);
+  }
+
+  Serial.printf("Turning %s for %lu ms (Δ=%d°)\n", direction.c_str(), turnDuration, diff);
+}
+
+void handleTurn() {
+  if (isTurning && (millis() - turnStartTime >= turnDuration)) {
+    stopMotors();
+    isTurning = false;
+    Serial.println("Turn complete.");
+  }
+}
+
+void handleForwardMovement() {
+  if (isMovingTimed && (millis() - moveStartTime >= moveDuration)) {
+    stopMotors();
+    isMovingTimed = false;
+    Serial.println("Step-based movement complete.");
+  }
+}
+
+int angleDifference(int a1, int a2) {
+  return (a2 - a1 + 540) % 360 - 180;  // Shortest signed difference (-180 to +180)
+}
+
+void processAzimuth(int azimuth) {
+  if (azimuthRef == -1) {
+    azimuthRef = azimuth;
+    Serial.println("Initialized azimuthRef.");
+    return;
+  }
+
+  int diff = angleDifference(azimuthRef, azimuth);
+  Serial.printf("Ref: %d, New: %d, Δ: %d\n", azimuthRef, azimuth, diff);
+
+  if (abs(diff) >= azimuthThreshold) {
+    String dir = (diff > 0) ? "right" : "left";
+    if (isMovingTimed) {
+      Serial.println("Azimuth deviation detected. Interrupting forward movement.");
+      stopMotors();
+      isMovingTimed = false;
+    }
+    startTurn(dir, diff);
+    azimuthRef = azimuth;
+  } else {
+    Serial.println("Small change. Ignored.");
+  }
+}
+
+void processMovement(int stepCount) {
+  if (lastStepCount == -1) {
+    lastStepCount = stepCount;
+    return;
+  }
+
+  int stepDiff = stepCount - lastStepCount;
+  Serial.printf("Processing steps: current=%d, last=%d, diff=%d\n", stepCount, lastStepCount, stepDiff);
+
+  if (stepDiff > 2 && !isTurning && !isMovingTimed) {
+    moveDuration = stepDiff * STEP_CONSTANT;
+    moveStartTime = millis();
+    isMovingTimed = true;
+    moveForward();
+
+    Serial.printf("Step count changed by %d. Moving forward for %lu ms\n", stepDiff, moveDuration);
+  }
+
+  lastStepCount = stepCount;
+}
+
+void loop() {
+  handleTurn();
+  handleForwardMovement();
+
+  if (SerialBT.available()) {
+    String input = SerialBT.readStringUntil('\n');
+    input.trim();
+    Serial.println("BT: " + input);
+
+    // Expect input format: "azimuth,steps"
+    int commaIndex = input.indexOf(',');
+    if (commaIndex > 0) {
+      String azStr = input.substring(0, commaIndex);
+      String stepStr = input.substring(commaIndex + 1);
+      int azimuth = azStr.toInt();
+      int steps = stepStr.toInt();
+
+      processAzimuth(azimuth);
+      processMovement(steps);
+    }
+
+    if (input == "forward") {
+      moveForward();
+      delay(3000);
+      stopMotors();
+    } else if (input == "left") {
+      startTurn("left", 90);
+    } else if (input == "right") {
+      startTurn("right", 90);
+    } else if (input == "stop") {
+      stopMotors();
+    }
+  }
+
+  delay(50);  // Small delay for stability
+}
