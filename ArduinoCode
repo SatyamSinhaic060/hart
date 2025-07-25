@@ -3,7 +3,7 @@ BluetoothSerial SerialBT;
 
 // Motor pins
 const int IN1 = 26, IN2 = 33, IN3 = 25, IN4 = 27;
- 
+
 // Azimuth control
 int azimuthRef = -1;
 int azimuthThreshold = 30;  // Degrees
@@ -165,3 +165,5 @@ void loop() {
 
   delay(50);  // Small delay for stability
 }
+
+
