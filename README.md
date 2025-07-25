@@ -1,33 +1,28 @@
 # HART(Helping Assistant Robotic Tracker)
 # 🤖 Human-Following Robot using ESP32
 
-A smart, low-cost robot that follows a human using a combination of sensors and AI. Built around the ESP32, this project uses an ultrasonic sensor mounted on a servo for directional scanning, voice or image recognition on a smartphone, and Bluetooth/Wi-Fi-based communication with the robot.
-
-
+As society ages, robotic helpers that follow and assist users are gaining interest. This report presents a conceptual design for a portable, person-following robot (“helper car”) using an ESP32 microcontroller ,  an L298N motor driver, and a smartphone with pedometer and orientation sensors. The smartphone app (created with MIT App Inventor) tracks the user’s movement and sends commands via Bluetooth  to the ESP32. The ESP32 processes Bluetooth data  to navigate and carry small objects. Key features include Bluetooth-based following,  load-carrying capability, and user-friendly interface. Emphasis is on a lightweight, battery-powered design for maximum portability. The architecture, interface, and implementation strategies are detailed, along with testing plans and discussion of performance trade-offs.
+Smartphone Sensors (Pedometer & Orientation): Modern smartphones include inertial sensors (accelerometer, gyroscope, magnetometer) enabling step counting (pedometer) and heading/orientation detection. An app can use these sensors to estimate the user’s movement vector (distance and direction) without GPS. By integrating step count and compass bearing, the smartphone app can infer how far and in what direction the user has moved. These estimates are sent to the robot via Bluetooth  allowing the robot to “know” where the user is heading relative to itself.
 ---
 
 ## 🧠 Features
 
-- 🧍 Detects and follows humans using ultrasonic scanning
-- 🎤 Accepts voice commands processed on smartphone
-- 📷 Optional person detection using smartphone camera + TensorFlow Lite
-- 📡 Communicates over *Bluetooth* or *Wi-Fi*
-- 🧭 Azimuth-based directional turning with angle wrap-around support
-- 🚧 Basic obstacle detection and avoidance
-- ⚙ PID control for smooth motion
+•	Portability: The system should be lightweight and powered by a portable battery (e.g. power bank or Li-ion pack). The design should minimize size and weight to be easily movable by one person.
+•	Power efficiency: Components (ESP32, motors, sensors) should be chosen for low power usage to allow at least 5 hours of continuous operation on a single charge.
+•	Safety: The robot must operate safely around humans. It should have a clearly safe stopping behavior on obstacles. Sharp edges or pinch points should be minimized. The speed should be moderate to avoid injury (e.g. ≤ 1 m/s).
+•	User interface: The smartphone app should be intuitive. For example, it may use simple buttons or voice commands to initiate follow mode. Feedback (like connection status, battery level) should be shown.
+•	Robustness: The system should handle common environmental variations . Bluetooth link should be maintained up to a reasonable range (e.g. 10 m).
 
 ---
 
 ## 🔧 Hardware Used
-
-- 🔲 *ESP32 (e.g., NodeMCU or ESP32-C3)*
-- 🔋 4 × 3.7V Li-ion batteries
-- 🔀 *L298N Motor Driver*
-- 🎛 *Servo Motor* (for ultrasonic scanning)
-- 👁 *HC-SR04 Ultrasonic Sensor*
-- 🔦 *IR Sensors / LDRs* (for basic line/light sensing)
-- 🔊 Buzzer for alerts
-- 📱 Smartphone (for AI + voice control interface)
+●	A stable internet connection (2Mbps or higher)
+●	ESP32 Board
+●	Motors and wheels
+●	Motor Driver
+●	Smartphone
+●	Wires
+●	Power supply
 
 ---
 
@@ -43,7 +38,7 @@ A smart, low-cost robot that follows a human using a combination of sensors and 
 ## 🔌 Wiring Overview
 
 - ESP32 PWM → Servo
-- ESP32 GPIO → Ultrasonic Trigger/Echo
+
 - ESP32 GPIOs → L298N IN1/IN2/IN3/IN4
 - ESP32 TX/RX → Bluetooth (optional)
 - ESP32 I2C/SPI → Additional sensors (if used)
@@ -51,15 +46,26 @@ A smart, low-cost robot that follows a human using a combination of sensors and 
 > 📐 The servo rotates left/right (e.g., -90° to +90°) to scan for human presence. Based on distance < 30 cm, robot turns toward that direction and follows.
 
 ---
+## Circuit Diagram
+<img width="1090" height="708" alt="image" src="https://github.com/user-attachments/assets/6130eb75-cab2-424b-946f-d496f27d2b91" />
+---
+
+## MIT App Inventor Block Code
+<img width="1090" height="667" alt="image" src="https://github.com/user-attachments/assets/f3ce0c1a-3152-46e0-bfa7-cb12b698ce3b" />
+
+
 
 ## 📲 Control Methods
 
-- 🔵 *Bluetooth*: For manual or AI-based control from phone
-- 📡 *Wi-Fi WebSocket*: For real-time azimuth data or camera tracking
+- 🔵 *Bluetooth*: For manual  control from phone and human following
 - 🔊 *Voice Commands*: Recognized on phone using offline ML
-- 🧍 *Person Detection*: Uses TensorFlow Lite model on mobile, classification result sent to ESP32
 
 ---
+## Screenshots
+<img width="564" height="564" alt="image" src="https://github.com/user-attachments/assets/e286013a-2314-435e-9f21-d66a04296f80" />
+<img width="565" height="565" alt="image" src="https://github.com/user-attachments/assets/d76c72d1-deac-45c5-b046-be2aba274bac" />
+
+
 
 
 
