@@ -34,18 +34,6 @@ Smartphone Sensors (Pedometer & Orientation): Modern smartphones include inertia
 | Android BLE/Wi-Fi app | Sends control signals to ESP32 |
 
 ---
-
-## 🔌 Wiring Overview
-
-- ESP32 PWM → Servo
-
-- ESP32 GPIOs → L298N IN1/IN2/IN3/IN4
-- ESP32 TX/RX → Bluetooth (optional)
-- ESP32 I2C/SPI → Additional sensors (if used)
-
-> 📐 The servo rotates left/right (e.g., -90° to +90°) to scan for human presence. Based on distance < 30 cm, robot turns toward that direction and follows.
-
----
 ## Circuit Diagram
 <img width="1090" height="708" alt="image" src="https://github.com/user-attachments/assets/6130eb75-cab2-424b-946f-d496f27d2b91" />
 ---
